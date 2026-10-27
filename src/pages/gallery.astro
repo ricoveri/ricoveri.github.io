@@ -1,0 +1,252 @@
+---
+import Base from '../layouts/Base.astro';
+import Photo from '../components/Photo.astro';
+import { getImage } from 'astro:assets';
+import { photos, usedSeries } from '../data/photos';
+import { site } from '../site';
+
+const filters = [{ id: 'all', label: 'All' }, ...usedSeries];
+const full = await Promise.all(
+  photos.map(async (p) => (await getImage({ src: p.src, width: 2400, format: 'webp', quality: 80 })).src),
+);
+---
+<Base title={`Gallery — ${site.name}`} current="gallery" backLink>
+  <section class="wrap page">
+    <div class="head">
+      <div class="titles">
+        <p class="mono muted">Selected work</p>
+        <h1>Gallery</h1>
+      </div>
+      {
+        usedSeries.length > 0 && (
+          <div role="group" aria-label="Filter series" class="filters" id="filters" hidden>
+            {filters.map((f) => (
+              <button type="button" class="mono" data-filter={f.id} aria-pressed={f.id === 'all' ? 'true' : 'false'}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )
+      }
+    </div>
+    <div class="rule"></div>
+    <div class="grid" id="grid">
+      {
+        photos.map((p, i) => (
+          <figure data-series={(p.series ?? []).join(' ')}>
+            <button type="button" class="open" data-index={i} aria-label={`Open photograph ${p.num}`}>
+              <Photo photo={p} sizes="(min-width: 960px) 440px, (min-width: 640px) 50vw, 100vw" />
+            </button>
+            <figcaption class="mono-s">
+              <span>
+                {p.num}
+                {(p.title || p.place) && ` — ${[p.title, p.place].filter(Boolean).join(', ')}`}
+              </span>
+              {p.year && <span>{p.year}</span>}
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </section>
+
+  <dialog id="lightbox" aria-label="Photograph viewer">
+    <img id="lightbox-img" alt="" />
+    <button type="button" id="lb-close" class="mono" aria-label="Close">Close</button>
+    <button type="button" id="lb-prev" class="mono" aria-label="Previous photograph">←</button>
+    <button type="button" id="lb-next" class="mono" aria-label="Next photograph">→</button>
+  </dialog>
+
+  <script id="full-urls" type="application/json" set:html={JSON.stringify(full)} />
+  <script>
+    const figures = Array.from(document.querySelectorAll<HTMLElement>('#grid figure'));
+    const urls: string[] = JSON.parse(document.getElementById('full-urls')!.textContent || '[]');
+
+    // Filters (hidden without JS so all photos simply show)
+    const filterBar = document.getElementById('filters');
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    function applyFilter(id: string) {
+      if (!buttons.some((b) => b.dataset.filter === id)) id = 'all';
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === id)));
+      figures.forEach((f) => {
+        const tags = (f.dataset.series || '').split(' ');
+        f.hidden = id !== 'all' && !tags.includes(id);
+      });
+      history.replaceState(null, '', id === 'all' ? location.pathname : `#${id}`);
+    }
+    if (filterBar) {
+      filterBar.hidden = false;
+      buttons.forEach((b) => b.addEventListener('click', () => applyFilter(b.dataset.filter!)));
+      applyFilter(location.hash.slice(1) || 'all');
+    }
+
+    // Lightbox
+    const dlg = document.getElementById('lightbox') as HTMLDialogElement;
+    const img = document.getElementById('lightbox-img') as HTMLImageElement;
+    let current = 0;
+    const visible = () => figures.map((_, i) => i).filter((i) => !figures[i].hidden);
+    function show(i: number) {
+      current = i;
+      img.src = urls[i];
+      img.alt = figures[i].querySelector('img')?.alt || '';
+    }
+    function step(dir: number) {
+      const v = visible();
+      const pos = v.indexOf(current);
+      show(v[(pos + dir + v.length) % v.length]);
+    }
+    figures.forEach((f, i) =>
+      f.querySelector('.open')!.addEventListener('click', () => {
+        show(i);
+        dlg.showModal();
+      }),
+    );
+    document.getElementById('lb-close')!.addEventListener('click', () => dlg.close());
+    document.getElementById('lb-prev')!.addEventListener('click', () => step(-1));
+    document.getElementById('lb-next')!.addEventListener('click', () => step(1));
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg || e.target === img) dlg.close();
+    });
+    dlg.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') step(-1);
+      if (e.key === 'ArrowRight') step(1);
+    });
+  </script>
+</Base>
+
+<style>
+  .muted {
+    color: var(--muted);
+  }
+  .page {
+    padding-top: 80px;
+    padding-bottom: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+  }
+  .titles {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  h1 {
+    font-size: clamp(44px, 7vw, 96px);
+    line-height: 1;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .filters[hidden] {
+    display: none;
+  }
+  .filters button {
+    min-height: 44px;
+    padding: 0 20px;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: var(--fg-soft);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .filters button[aria-pressed='true'] {
+    border-color: var(--fg);
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .rule {
+    border-top: 1px solid var(--rule);
+  }
+  .grid {
+    columns: 300px 3;
+    column-gap: 24px;
+  }
+  figure {
+    margin: 0 0 40px;
+    break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  figure[hidden] {
+    display: none;
+  }
+  .open {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    display: block;
+    width: 100%;
+  }
+  figcaption {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  dialog {
+    border: 0;
+    padding: 0;
+    background: #000;
+    color: var(--fg);
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+  }
+  dialog::backdrop {
+    background: #000;
+  }
+  dialog img {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  dialog button {
+    position: absolute;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 16px;
+    border: 1px solid #3a3a3a;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--fg);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #lb-close {
+    top: 16px;
+    right: 16px;
+  }
+  #lb-prev {
+    left: 16px;
+    top: 50%;
+  }
+  #lb-next {
+    right: 16px;
+    top: 50%;
+  }
+  @media (max-width: 600px) {
+    .page {
+      padding-top: 40px;
+      padding-bottom: 96px;
+    }
+  }
+</style>

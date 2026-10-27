@@ -1,0 +1,30 @@
+---
+import { site } from '../site';
+const { backLink = false } = Astro.props as { backLink?: boolean };
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<div class="wrap">
+  <footer class="foot">
+    <span>© {site.year} {site.name}</span>
+    {backLink ? <a href={`${base}/`}>← Back to home</a> : <span>All photographs © the photographer</span>}
+  </footer>
+</div>
+<style>
+  .foot {
+    padding-top: 32px;
+    padding-bottom: 48px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: #8f8f8f;
+  }
+  .foot a {
+    text-decoration: none;
+    color: var(--muted);
+  }
+</style>

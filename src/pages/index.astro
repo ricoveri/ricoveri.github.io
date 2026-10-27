@@ -1,0 +1,221 @@
+---
+import Base from '../layouts/Base.astro';
+import Photo from '../components/Photo.astro';
+import { site } from '../site';
+import { getPhoto, photos, usedSeries } from '../data/photos';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const featured = getPhoto(site.featured);
+const aboutPhoto = site.aboutPhoto ? getPhoto(site.aboutPhoto) : undefined;
+---
+<Base current="home">
+  <section class="wrap hero" id="top">
+    <p class="mono muted">{site.eyebrow}</p>
+    <h1>{site.name}</h1>
+    <p class="statement">{site.statement}</p>
+    <a class="cta mono" href={`${base}/gallery/`}>View the gallery →</a>
+  </section>
+
+  <section class="wrap" aria-label="Featured photograph">
+    <Photo photo={featured} ratio="16 / 9" eager sizes="(min-width: 1440px) 1360px, 100vw" />
+  </section>
+
+  {
+    usedSeries.length > 0 && (
+      <section class="wrap series" aria-label="Series">
+        <div class="series-grid">
+          {usedSeries.map((s) => (
+            <a href={`${base}/gallery/#${s.id}`}>
+              <span>{s.label}</span>
+              <span class="mono muted">→</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="wrap about" id="about">
+    <div class="section-head"><h2>About</h2></div>
+    <div class="about-body">
+      {
+        aboutPhoto && (
+          <div class="about-photo">
+            <Photo photo={aboutPhoto} ratio="4 / 5" sizes="(min-width: 800px) 480px, 100vw" />
+          </div>
+        )
+      }
+      <div class="about-text">
+        {site.about.map((p) => <p>{p}</p>)}
+        <p class="muted small">{photos.length} photographs in the gallery.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap contact" id="contact">
+    <div class="section-head"><h2>Contact</h2></div>
+    <a class="email" href={`mailto:${site.email}`}>{site.email}</a>
+    <div class="facts">
+      <div>
+        <span class="label">Based in</span>
+        <span>{site.basedIn}</span>
+      </div>
+      {
+        site.social.map((s) => (
+          <div>
+            <span class="label">{s.label}</span>
+            <a href={s.href} rel="noopener noreferrer" target="_blank">{s.handle}</a>
+          </div>
+        ))
+      }
+      <div>
+        <span class="label">Available for</span>
+        <span>{site.availableFor}</span>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .muted {
+    color: var(--muted);
+  }
+  .small {
+    font-size: 14px;
+  }
+  .hero {
+    padding-top: 96px;
+    padding-bottom: 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .hero h1 {
+    font-size: clamp(48px, 9vw, 140px);
+    line-height: 0.95;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+  }
+  .statement {
+    max-width: 560px;
+    font-size: 20px;
+    line-height: 1.5;
+    color: #bdbdbd;
+  }
+  .cta {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 24px;
+    border: 1px solid var(--fg);
+    text-decoration: none;
+  }
+  .cta:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+  .series {
+    padding-top: 120px;
+  }
+  .series-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    border-top: 1px solid var(--rule);
+  }
+  .series-grid a {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 24px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+    font-size: 40px;
+    letter-spacing: -0.02em;
+  }
+  .about {
+    padding-top: 160px;
+    padding-bottom: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .about-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 64px;
+    align-items: flex-start;
+  }
+  .about-photo {
+    flex: 1 1 320px;
+    max-width: 480px;
+  }
+  .about-text {
+    flex: 999 1 400px;
+    min-width: 0;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    font-size: 20px;
+    line-height: 1.6;
+    color: var(--fg-soft);
+  }
+  .contact {
+    padding-top: 120px;
+    padding-bottom: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .email {
+    font-size: clamp(28px, 6vw, 88px);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 32px;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .facts > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .facts a {
+    text-decoration: none;
+  }
+  .label {
+    color: #8f8f8f;
+    text-transform: uppercase;
+  }
+  @media (max-width: 600px) {
+    .hero {
+      padding-top: 48px;
+    }
+    .series {
+      padding-top: 72px;
+    }
+    .about {
+      padding-top: 96px;
+    }
+    .about-body {
+      gap: 32px;
+    }
+    .contact {
+      padding-top: 72px;
+      padding-bottom: 96px;
+    }
+    .series-grid a {
+      font-size: 32px;
+    }
+  }
+</style>

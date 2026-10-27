@@ -1,0 +1,28 @@
+---
+import { Image } from 'astro:assets';
+import type { Photo } from '../data/photos';
+
+interface Props {
+  photo: Photo;
+  sizes: string;
+  alt?: string;
+  eager?: boolean;
+  /** CSS aspect-ratio to crop to, e.g. "16 / 9". Omit to keep the photo's own ratio. */
+  ratio?: string;
+}
+const { photo, sizes, alt = '', eager = false, ratio } = Astro.props;
+const label = alt || [photo.title, photo.place].filter(Boolean).join(', ');
+---
+<span class="tile" style={ratio ? `aspect-ratio: ${ratio}` : undefined}>
+  <Image
+    src={photo.src}
+    alt={label}
+    widths={[480, 960, 1600, 2400]}
+    sizes={sizes}
+    format="webp"
+    quality={80}
+    loading={eager ? 'eager' : 'lazy'}
+    decoding={eager ? 'auto' : 'async'}
+    style={ratio ? undefined : 'height: auto'}
+  />
+</span>

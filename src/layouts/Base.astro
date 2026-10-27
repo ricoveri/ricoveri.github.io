@@ -1,0 +1,39 @@
+---
+import '../styles/global.css';
+import { getImage } from 'astro:assets';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../site';
+import { getPhoto } from '../data/photos';
+
+const { title = site.title, current, backLink = false } = Astro.props as {
+  title?: string;
+  current?: 'home' | 'gallery';
+  backLink?: boolean;
+};
+const og = await getImage({ src: getPhoto(site.featured).src, width: 1200, format: 'jpg' });
+const ogUrl = new URL(og.src, Astro.site).href;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={site.description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={site.description} />
+    <meta property="og:image" content={ogUrl} />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href={`${base}/favicon.ico`} sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${base}/favicon-32x32.png`} />
+    <link rel="icon" type="image/png" sizes="16x16" href={`${base}/favicon-16x16.png`} />
+    <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />
+  </head>
+  <body>
+    <Header current={current} />
+    <main><slot /></main>
+    <Footer backLink={backLink} />
+  </body>
+</html>
